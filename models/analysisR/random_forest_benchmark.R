@@ -21,7 +21,8 @@ train <- df[train_rows,]
 test <- df[!train_rows,]
 
 # with ntree = 2000, gives logloss of .80 using 2/3 of training set
-# how do random forests handle interactions? are they built in?
+# remember, interaction handling is built in naturally
+# took 20 min to run with 1000 trees, gave logloss .67 using 2/3 training set
 rf <- randomForest(interest_level ~ price + bedrooms + bathrooms + 
                      latitude + longitude + #building_id + manager_id +
                      common.outdoor.space + laundry.in.building +
@@ -31,7 +32,7 @@ rf <- randomForest(interest_level ~ price + bedrooms + bathrooms +
                      elevator + high.speed.internet + hardwood.floors +
                      outdoor.space + loft + roof.deck + new.construction +
                      garden.patio + dishwasher + pre.war + no.fee +
-                     dogs.allowed + cats.allowed, train, ntree=1000, importance=TRUE)
+                     dogs.allowed + cats.allowed, train, ntree=500, importance=TRUE)
 
 predicted <- as.data.frame(predict(rf, test, type = "prob"))
 
