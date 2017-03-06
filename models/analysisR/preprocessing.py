@@ -13,25 +13,45 @@ for unit in raw['listing_id']:
     units[unit] = {}
 
 bool_features = defaultdict(int)
-unfeatures = ('listing_id', 'photos', 'description')
+unfeatures = ('listing_id', 'photos')
 
 # screen for desired features while building up rest of unit info
 bool_features = defaultdict(int)
 
 # todo: look at description and extract common ngrams (1, 2, 3)
+# for now, just bigrams
+description_ngrams = defaultdict(int)
 
 # get only 50 most popular buildings and managers
 building_ids = defaultdict(int)
 manager_ids = defaultdict(int)
 
+# todo: strip out all non-alphanumeric chars
+unwanted_chars = ['\t', '/', '<', '>', '.']
+
 for feature in raw:
 	if feature not in unfeatures:
-		if feature == 'features':
+		if feature == 'description':
+			for unit in raw[feature]:
+				d = raw[feature][unit].lower().strip()
+				for char in unwanted_chars:
+					d = d.replace(char, '')
+				units[unit][feature] = {}
+				prev_word = ''
+				for word in d.split(' '):
+					if len(word) > 3:
+						if prev_word:
+							bigram = prev_word + ' ' + word
+							description_ngrams[bigram] += 1
+							units[unit][feature][bigram] = 1
+						prev_word = word
+		elif feature == 'features':
 			for unit in raw[feature]:
 				units[unit][feature] = {}
 				for f in raw[feature][unit]:
-					bool_features[f.strip().lower()] += 1
-					units[unit][feature][f.strip().lower()] = 1
+					f_ = f.strip().lower()
+					bool_features[f_] += 1
+					units[unit][feature][f_] = 1
 		elif feature == 'building_id':
 			for unit in raw[feature]:
 				building_id = raw[feature][unit].strip().replace('\t','')
@@ -56,13 +76,17 @@ for feature in bool_features:
 
 retained_building_ids = set([x for x,y in sorted(building_ids.items(), key=itemgetter(1), reverse=True)[1:50]])
 retained_manager_ids = set([x for x,y in sorted(manager_ids.items(), key=itemgetter(1), reverse=True)[1:50]])
+retained_descriptors = set([x for x,y in sorted(description_ngrams.items(), key=itemgetter(1), reverse=True)[1:100]])
 
 n = 0
-with open('framed_data_2.csv', 'w') as df:
+with open('framed_data_1.csv', 'w') as df:
 	df.write('unit')
 	for feature in raw:
 		if feature not in unfeatures:
-			if feature == 'features':
+			if feature == 'description':
+				for f in retained_descriptors:
+					df.write('\t' + f)
+			elif feature == 'features':
 				for f in retained_bool_feature:
 					df.write('\t' + f)
 			else:
@@ -72,7 +96,14 @@ with open('framed_data_2.csv', 'w') as df:
 		df.write(unit)
 		for feature in raw:
 			if feature not in unfeatures:
-				if feature == "features":
+				if feature == "description": 
+					for f in retained_descriptors:
+						df.write('\t')
+						if f in units[unit][feature]:
+							df.write(str(1))
+						else:
+							df.write(str(0))
+				elif feature == "features":
 					for f in retained_bool_feature:
 						df.write('\t')
 						if f in units[unit][feature]:
@@ -99,7 +130,3 @@ with open('framed_data_2.csv', 'w') as df:
 		if n % 10000 == 0:
 			print n, ' done.'
 print 'All done.'
-
-print 'Featureset:'
-print retained_bool_feature
-print retained_building_ids

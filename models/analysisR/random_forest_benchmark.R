@@ -16,22 +16,22 @@ for(i in 13:length(colnames(df))) {
   df[,colnames(df)[i]] <- as.logical(df[,colnames(df)[i]])
 }
 
+df$prewar <- df$pre.war + df$prewar
+
 train_rows <- sample(c(TRUE, TRUE, FALSE), nrow(df), replace = TRUE)
 train <- df[train_rows,]
 test <- df[!train_rows,]
 
-# with ntree = 2000, gives logloss of .80 using 2/3 of training set
-# remember, interaction handling is built in naturally
-# took 20 min to run with 1000 trees, gave logloss .67 using 2/3 training set
+# took 10 min to run with 500 trees, gave logloss .666 using 2/3 training set and 33 features
 rf <- randomForest(interest_level ~ price + bedrooms + bathrooms + 
-                     latitude + longitude + #building_id + manager_id +
+                     latitude + longitude + manager_id + #building_id +
                      common.outdoor.space + laundry.in.building +
                      exclusive + hardwood + dining.room + terrace +
                      doorman + fitness.center + balcony + prewar +
                      wheelchair.access + swimming.pool + laundry.in.unit +
                      elevator + high.speed.internet + hardwood.floors +
                      outdoor.space + loft + roof.deck + new.construction +
-                     garden.patio + dishwasher + pre.war + no.fee +
+                     garden.patio + dishwasher + no.fee +
                      dogs.allowed + cats.allowed, train, ntree=500, importance=TRUE)
 
 predicted <- as.data.frame(predict(rf, test, type = "prob"))
